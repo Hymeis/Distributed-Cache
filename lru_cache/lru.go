@@ -18,7 +18,7 @@ type entry struct {
 	value Value
 }
 
-type Value interface{
+type Value interface {
 	Len() int
 }
 
