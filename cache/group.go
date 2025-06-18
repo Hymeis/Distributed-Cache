@@ -1,7 +1,8 @@
 package cache
+
 import (
-	"sync"
 	"fmt"
+	"sync"
 )
 
 type Getter interface {
@@ -18,14 +19,14 @@ func (f GetterFunc) Get(key string) ([]byte, error) {
 
 // Group represents a cache group with a name and a cache.
 type Group struct {
-	name   	string
-	getter 	Getter // Function to get data if not found in cache
-	cache  	*Cache
+	name   string
+	getter Getter // Function to get data if not found in cache
+	cache  *Cache
 }
 
 var (
 	groups = make(map[string]*Group) // All groups
-	mu sync.RWMutex 
+	mu     sync.RWMutex
 )
 
 func NewGroup(name string, cacheSize int64, getter Getter) *Group {

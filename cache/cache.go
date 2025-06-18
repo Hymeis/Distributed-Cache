@@ -1,18 +1,19 @@
 package cache
+
 import (
+	lru "distributed-cache/cache/lru_cache"
 	"sync"
-	"distributed-cache/lru_cache"
 )
 
 type Cache struct {
-	mu       	sync.Mutex
-	lruCache 	*lru.LRUCache
-	cacheSize 	int64
+	mu        sync.Mutex
+	lruCache  *lru.LRUCache
+	cacheSize int64
 }
 
 func NewCache(size int64, onEvicted func(key string, value lru.Value)) *Cache {
 	return &Cache{
-		lruCache: lru.New(size, onEvicted),
+		lruCache:  lru.New(size, onEvicted),
 		cacheSize: size,
 	}
 }
