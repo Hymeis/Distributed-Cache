@@ -2,18 +2,15 @@
 Learning Golang through a distributed project
 ## Features Done
 - LRU Cache
-- Local Cache CRUD (w/ pessimistic lock)
+- Disctributed Cache CRUD (w/ pessimistic lock)
 - Consistent Hashing
 ## Features TBD
-- Distributed Cache CRUD
+- Cache breakdown avoidance
+- Node faliure handling
 - [More]
 # How to run the project
+Try
 ```
-go build
-./distributed-cache
+bash run.sh
 ```
-Try (for example)
-```
-curl http://localhost:8080/cache/messages/Lang
-```
-In another terminal and see what happens 
+and check the output shown
