@@ -2,6 +2,7 @@ package cache
 
 import (
 	"fmt"
+	"log"
 	"sync"
 )
 
@@ -22,6 +23,7 @@ type Group struct {
 	name   string
 	getter Getter // Function to get data if not found in cache
 	cache  *Cache
+	peers  PeerPicker
 }
 
 var (
@@ -78,8 +80,31 @@ func (g *Group) Get(key string) (ByteView, error) {
 	return g.load(key)
 }
 
-func (g *Group) load(key string) (ByteView, error) {
+func (g *Group) RegisterPeers(peers PeerPicker) {
+	if g.peers != nil {
+		panic("RegisterPeerPicker called more than once")
+	}
+	g.peers = peers
+}
+
+func (g *Group) load(key string) (value ByteView, err error) {
+	if g.peers != nil {
+		if peer, exists := g.peers.PickPeer(key); exists {
+			if value, err = g.peerLoad(peer, key); err == nil {
+				return value, nil
+			}
+			log.Println("Failed to get from Peer", err)
+		}
+	}
 	return g.localLoad(key)
+}
+
+func (g *Group) peerLoad(peer PeerGetter, key string) (ByteView, error) {
+	bytes, err := peer.Get(g.name, key)
+	if err != nil {
+		return ByteView{}, err
+	}
+	return ByteView{bytes: bytes}, nil
 }
 
 func (g *Group) localLoad(key string) (ByteView, error) {
