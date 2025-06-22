@@ -1,8 +1,8 @@
 package cache
 
 import (
+	"distributed-cache/cache/singleflight"
 	"fmt"
-	"log"
 	"sync"
 )
 
@@ -24,6 +24,7 @@ type Group struct {
 	getter Getter // Function to get data if not found in cache
 	cache  *Cache
 	peers  PeerPicker
+	loader *singleflight.Group
 }
 
 var (
@@ -46,6 +47,7 @@ func NewGroup(name string, cacheSize int64, getter Getter) *Group {
 		name:   name,
 		getter: getter,
 		cache:  NewCache(cacheSize, nil),
+		loader: &singleflight.Group{},
 	}
 	groups[name] = group
 	return group
@@ -87,16 +89,25 @@ func (g *Group) RegisterPeers(peers PeerPicker) {
 	g.peers = peers
 }
 
-func (g *Group) load(key string) (value ByteView, err error) {
-	if g.peers != nil {
-		if peer, exists := g.peers.PickPeer(key); exists {
-			if value, err = g.peerLoad(peer, key); err == nil {
-				return value, nil
+func (g *Group) loadFn(key string) func() (interface{}, error) {
+	return func() (interface{}, error) {
+		if g.peers != nil {
+			if peer, exists := g.peers.PickPeer(key); exists {
+				if value, err := g.peerLoad(peer, key); err == nil {
+					return value, nil
+				}
 			}
-			log.Println("Failed to get from Peer", err)
 		}
+		return g.localLoad(key)
 	}
-	return g.localLoad(key)
+}
+
+func (g *Group) load(key string) (value ByteView, err error) {
+	viewInterface, err := g.loader.Do(key, g.loadFn(key))
+	if err == nil {
+		return viewInterface.(ByteView), nil
+	}
+	return
 }
 
 func (g *Group) peerLoad(peer PeerGetter, key string) (ByteView, error) {
