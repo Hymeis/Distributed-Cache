@@ -1,6 +1,7 @@
 package cache
 
 import (
+	pb "distributed-cache/cache/pb"
 	"distributed-cache/cache/singleflight"
 	"fmt"
 	"sync"
@@ -65,10 +66,9 @@ func GetGroup(name string) *Group {
 }
 
 /*
-1. If the key is cached, return the cached value.
-2. If the key is not cached, use the getter function to retrieve the value.
-
-TBD: get cached value from other nodes in a distributed cache setup.
+1. If the key is cached locally, return the cached value.
+2. If the key is cached in peer, get the value from the peer.
+3. If the key is not cached, use the getter function to retrieve the value.
 */
 func (g *Group) Get(key string) (ByteView, error) {
 	if key == "" {
@@ -111,11 +111,16 @@ func (g *Group) load(key string) (value ByteView, err error) {
 }
 
 func (g *Group) peerLoad(peer PeerGetter, key string) (ByteView, error) {
-	bytes, err := peer.Get(g.name, key)
+	req := &pb.Request{
+		Group: g.name,
+		Key:   key,
+	}
+	res := &pb.Response{}
+	err := peer.Get(req, res)
 	if err != nil {
 		return ByteView{}, err
 	}
-	return ByteView{bytes: bytes}, nil
+	return ByteView{bytes: res.Value}, nil
 }
 
 func (g *Group) localLoad(key string) (ByteView, error) {

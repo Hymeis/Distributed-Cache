@@ -2,6 +2,7 @@ package cache
 
 import (
 	"distributed-cache/cache/consistenthash"
+	pb "distributed-cache/cache/pb"
 	"fmt"
 	"io"
 	"log"
@@ -9,6 +10,8 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -68,8 +71,13 @@ func (pool *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	body, err := proto.Marshal(&pb.Response{Value: bv.Bytes()})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(bv.Bytes())
+	w.Write(body)
 }
 
 func (p *HTTPPool) Set(peers ...string) {
@@ -94,24 +102,27 @@ func (p *HTTPPool) PickPeer(key string) (PeerGetter, bool) {
 }
 
 // HTTP Getter
-func (h *HTTPGetter) Get(group string, key string) ([]byte, error) {
-	u := fmt.Sprintf("%v%v/%v", h.baseURL, url.QueryEscape(group), url.QueryEscape(key))
+func (h *HTTPGetter) Get(in *pb.Request, out *pb.Response) error {
+	u := fmt.Sprintf("%v%v/%v", h.baseURL, url.QueryEscape(in.GetGroup()), url.QueryEscape(in.GetKey()))
 	res, err := http.Get(u)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server returned: %v", res.Status)
+		return fmt.Errorf("server returned: %v", res.Status)
 	}
 
 	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("resbonse body: %v", err)
+		return fmt.Errorf("reading resbonse body: %v", err)
 	}
 
-	return bytes, nil
+	if err = proto.Unmarshal(bytes, out); err != nil {
+		return fmt.Errorf("decoding response body: %v", err)
+	}
+	return nil
 }
 
 // Compile time assertion
