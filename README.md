@@ -1,12 +1,20 @@
 # Distributed-Cache
-Learning Golang through a distributed project
-## Features Done
-- LRU Cache
-- Disctributed Cache CRUD (w/ pessimistic lock)
-- Consistent Hashing
+A lightweight, Go-based distributed in-memory cache with  **Consistent-hashing sharding**, **Singleflight deduplication**, **Size-bounded LRU**, and **Protobuf Communcation**
+## Architecture
+
+```text
+Client → Cache.Add("🐺", "Hymeis") (evict LRU if needed)
+Client → Group.Get("🐺")
+        ├─ LRU hit? ──▶ return
+        └─ cache miss:
+            └─ singleflight.Do("foo", fn): 
+                └─ pickPeer("foo") via consistent hash
+                    ├─ peer? ──▶ peerLoad (HTTP+Protobuf) ──▶ return
+                    └─ local?  ──▶ localLoad ──▶ return
+```
+---
 ## Features TBD
-- Cache breakdown avoidance
-- Node faliure handling
+- Node faliure handling (via replication)
 - [More]
 # How to run the project
 Try
