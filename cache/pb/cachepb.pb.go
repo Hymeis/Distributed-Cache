@@ -7,12 +7,11 @@
 package pb
 
 import (
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
-
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -22,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Request struct {
+type GetRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Group         string                 `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
 	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
@@ -30,20 +29,20 @@ type Request struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Request) Reset() {
-	*x = Request{}
+func (x *GetRequest) Reset() {
+	*x = GetRequest{}
 	mi := &file_cachepb_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Request) String() string {
+func (x *GetRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Request) ProtoMessage() {}
+func (*GetRequest) ProtoMessage() {}
 
-func (x *Request) ProtoReflect() protoreflect.Message {
+func (x *GetRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_cachepb_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -55,19 +54,19 @@ func (x *Request) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Request.ProtoReflect.Descriptor instead.
-func (*Request) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
+func (*GetRequest) Descriptor() ([]byte, []int) {
 	return file_cachepb_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Request) GetGroup() string {
+func (x *GetRequest) GetGroup() string {
 	if x != nil {
 		return x.Group
 	}
 	return ""
 }
 
-func (x *Request) GetKey() string {
+func (x *GetRequest) GetKey() string {
 	if x != nil {
 		return x.Key
 	}
@@ -118,19 +117,123 @@ func (x *Response) GetValue() []byte {
 	return nil
 }
 
+type SetRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Group         string                 `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	Value         []byte                 `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetRequest) Reset() {
+	*x = SetRequest{}
+	mi := &file_cachepb_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetRequest) ProtoMessage() {}
+
+func (x *SetRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cachepb_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetRequest.ProtoReflect.Descriptor instead.
+func (*SetRequest) Descriptor() ([]byte, []int) {
+	return file_cachepb_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *SetRequest) GetGroup() string {
+	if x != nil {
+		return x.Group
+	}
+	return ""
+}
+
+func (x *SetRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *SetRequest) GetValue() []byte {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
+type EmptyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EmptyResponse) Reset() {
+	*x = EmptyResponse{}
+	mi := &file_cachepb_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EmptyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmptyResponse) ProtoMessage() {}
+
+func (x *EmptyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cachepb_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmptyResponse.ProtoReflect.Descriptor instead.
+func (*EmptyResponse) Descriptor() ([]byte, []int) {
+	return file_cachepb_proto_rawDescGZIP(), []int{3}
+}
+
 var File_cachepb_proto protoreflect.FileDescriptor
 
 const file_cachepb_proto_rawDesc = "" +
 	"\n" +
-	"\rcachepb.proto\x12\x02pb\"1\n" +
-	"\aRequest\x12\x14\n" +
+	"\rcachepb.proto\x12\x02pb\"4\n" +
+	"\n" +
+	"GetRequest\x12\x14\n" +
 	"\x05group\x18\x01 \x01(\tR\x05group\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\" \n" +
 	"\bResponse\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\fR\x05value2.\n" +
+	"\x05value\x18\x01 \x01(\fR\x05value\"J\n" +
 	"\n" +
-	"GroupCache\x12 \n" +
-	"\x03Get\x12\v.pb.Request\x1a\f.pb.ResponseB1Z/github.com/Hymeis/Distributed-Cache/cache/pb;pbb\x06proto3"
+	"SetRequest\x12\x14\n" +
+	"\x05group\x18\x01 \x01(\tR\x05group\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x03 \x01(\fR\x05value\"\x0f\n" +
+	"\rEmptyResponse2[\n" +
+	"\n" +
+	"GroupCache\x12#\n" +
+	"\x03Get\x12\x0e.pb.GetRequest\x1a\f.pb.Response\x12(\n" +
+	"\x03Set\x12\x0e.pb.SetRequest\x1a\x11.pb.EmptyResponseB1Z/github.com/Hymeis/Distributed-Cache/cache/pb;pbb\x06proto3"
 
 var (
 	file_cachepb_proto_rawDescOnce sync.Once
@@ -144,16 +247,20 @@ func file_cachepb_proto_rawDescGZIP() []byte {
 	return file_cachepb_proto_rawDescData
 }
 
-var file_cachepb_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_cachepb_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_cachepb_proto_goTypes = []any{
-	(*Request)(nil),  // 0: pb.Request
-	(*Response)(nil), // 1: pb.Response
+	(*GetRequest)(nil),    // 0: pb.GetRequest
+	(*Response)(nil),      // 1: pb.Response
+	(*SetRequest)(nil),    // 2: pb.SetRequest
+	(*EmptyResponse)(nil), // 3: pb.EmptyResponse
 }
 var file_cachepb_proto_depIdxs = []int32{
-	0, // 0: pb.GroupCache.Get:input_type -> pb.Request
-	1, // 1: pb.GroupCache.Get:output_type -> pb.Response
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	0, // 0: pb.GroupCache.Get:input_type -> pb.GetRequest
+	2, // 1: pb.GroupCache.Set:input_type -> pb.SetRequest
+	1, // 2: pb.GroupCache.Get:output_type -> pb.Response
+	3, // 3: pb.GroupCache.Set:output_type -> pb.EmptyResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -170,7 +277,7 @@ func file_cachepb_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cachepb_proto_rawDesc), len(file_cachepb_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -52,3 +52,27 @@ func (m *Map) Get(key string) string {
 
 	return m.hashMap[m.keys[idx%len(m.keys)]]
 }
+
+func (m *Map) GetReplicas(key string, rf int) []string {
+	if len(m.keys) == 0 || rf <= 0 {
+		return nil
+	}
+	hash := int(m.hash([]byte(key)))
+	idx := sort.Search(len(m.keys), func(i int) bool {
+		return m.keys[i] >= hash
+	})
+
+	var (
+		replicas []string
+		seen     = make(map[string]bool)
+	)
+	for i := 0; len(replicas) < rf; i++ {
+		node := m.hashMap[m.keys[(idx+i)%len(m.keys)]]
+		if !seen[node] {
+			replicas = append(replicas, node)
+			seen[node] = true
+		}
+	}
+
+	return replicas
+}

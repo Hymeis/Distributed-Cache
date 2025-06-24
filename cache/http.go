@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"bytes"
 	"distributed-cache/cache/consistenthash"
 	pb "distributed-cache/cache/pb"
 	"fmt"
@@ -15,8 +16,9 @@ import (
 )
 
 const (
-	defaultPath     = "/dcache/"
-	defaultReplicas = 100
+	defaultPath              = "/dcache/"
+	defaultReplicas          = 100 // Number of vnodes
+	defaultReplicationFactor = 3   // number of replicated data
 )
 
 type HTTPPool struct {
@@ -29,6 +31,34 @@ type HTTPPool struct {
 
 type HTTPGetter struct {
 	baseURL string
+}
+
+func (h *HTTPGetter) Set(in *pb.SetRequest, out *pb.EmptyResponse) error {
+	// Build the POST URL: <baseURL>/<group>/<key>
+	u := fmt.Sprintf(
+		"%s%s/%s",
+		h.baseURL,
+		url.PathEscape(in.Group),
+		url.PathEscape(in.Key),
+	)
+
+	// Marshal the SetRequest as protobuf
+	body, err := proto.Marshal(in)
+	if err != nil {
+		return fmt.Errorf("marshaling SetRequest: %w", err)
+	}
+
+	// Fire the POST with the protobuf payload
+	resp, err := http.Post(u, "application/octet-stream", bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("POST to %s failed: %w", u, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("peer %s returned status %s", u, resp.Status)
+	}
+	return nil
 }
 
 // HTTP Pool
@@ -60,24 +90,50 @@ func (pool *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	groupName := routes[0]
 	key := routes[1]
 
-	group := GetGroup(groupName)
-	if group == nil {
-		http.Error(w, "Group Not Found: "+groupName, http.StatusNotFound)
-		return
-	}
-	bv, err := group.Get(key) // ByteView, Error
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	switch r.Method {
+	case http.MethodGet:
+		group := GetGroup(groupName)
+		if group == nil {
+			http.Error(w, "Group Not Found: "+groupName, http.StatusNotFound)
+			return
+		}
+		bv, err := group.Get(key) // ByteView, Error
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		body, err := proto.Marshal(&pb.Response{Value: bv.Bytes()})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Write(body)
+
+	case http.MethodPost:
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		var req pb.SetRequest
+		if err := proto.Unmarshal(body, &req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		group := GetGroup(req.Group)
+		if group == nil {
+			http.Error(w, "Group Not Found: "+groupName, http.StatusNotFound)
+			return
+		}
+		// Add
+		group.cache.Add(req.Key, ByteView{bytes: []byte(req.Value)})
+		w.WriteHeader(http.StatusOK)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 
-	body, err := proto.Marshal(&pb.Response{Value: bv.Bytes()})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(body)
 }
 
 func (p *HTTPPool) Set(peers ...string) {
@@ -91,18 +147,22 @@ func (p *HTTPPool) Set(peers ...string) {
 	}
 }
 
-func (p *HTTPPool) PickPeer(key string) (PeerGetter, bool) {
+func (p *HTTPPool) PickPeer(key string) (PeerClient, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if peer := p.peers.Get(key); peer != "" && peer != p.self {
-		p.Log("Picked peer %s", peer)
-		return p.httpGetters[peer], true
+	replicas := p.peers.GetReplicas(key, defaultReplicationFactor)
+	for _, peer := range replicas {
+		if peer != "" && peer != p.self {
+			p.Log("Picked peer %s", peer)
+			return p.httpGetters[peer], true
+		}
 	}
+
 	return nil, false
 }
 
 // HTTP Getter
-func (h *HTTPGetter) Get(in *pb.Request, out *pb.Response) error {
+func (h *HTTPGetter) Get(in *pb.GetRequest, out *pb.Response) error {
 	u := fmt.Sprintf("%v%v/%v", h.baseURL, url.QueryEscape(in.GetGroup()), url.QueryEscape(in.GetKey()))
 	res, err := http.Get(u)
 	if err != nil {
@@ -126,4 +186,4 @@ func (h *HTTPGetter) Get(in *pb.Request, out *pb.Response) error {
 }
 
 // Compile time assertion
-var _ PeerGetter = (*HTTPGetter)(nil)
+var _ PeerClient = (*HTTPGetter)(nil)

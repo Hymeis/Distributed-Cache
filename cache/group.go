@@ -91,14 +91,20 @@ func (g *Group) RegisterPeers(peers PeerPicker) {
 
 func (g *Group) loadFn(key string) func() (interface{}, error) {
 	return func() (interface{}, error) {
+		// Local Load
+		if val, err := g.localLoad(key); err == nil {
+			return val, nil
+		}
+		// Peer Load
 		if g.peers != nil {
-			if peer, exists := g.peers.PickPeer(key); exists {
-				if value, err := g.peerLoad(peer, key); err == nil {
-					return value, nil
+			if peer, ok := g.peers.PickPeer(key); ok {
+				if val, err := g.peerLoad(peer, key); err == nil {
+					return val, nil
 				}
 			}
 		}
-		return g.localLoad(key)
+		// Impossible
+		return ByteView{}, fmt.Errorf("key %q not found locally or on peers", key)
 	}
 }
 
@@ -110,8 +116,8 @@ func (g *Group) load(key string) (value ByteView, err error) {
 	return
 }
 
-func (g *Group) peerLoad(peer PeerGetter, key string) (ByteView, error) {
-	req := &pb.Request{
+func (g *Group) peerLoad(peer PeerClient, key string) (ByteView, error) {
+	req := &pb.GetRequest{
 		Group: g.name,
 		Key:   key,
 	}
@@ -138,6 +144,24 @@ func (g *Group) localLoad(key string) (ByteView, error) {
 	}
 
 	value := ByteView{bytes: data}
+
+	// Local Add
 	g.cache.Add(key, value)
+
+	// Replicas Add
+	if httpPool, ok := g.peers.(*HTTPPool); ok {
+		go func() {
+			peers := httpPool.peers.GetReplicas(key, defaultReplicationFactor)
+			req := &pb.SetRequest{Group: g.name, Key: key, Value: data}
+			var empty pb.EmptyResponse
+			for _, addr := range peers {
+				if addr == httpPool.self {
+					continue
+				}
+				getter := httpPool.httpGetters[addr]
+				_ = getter.Set(req, &empty)
+			}
+		}()
+	}
 	return value, nil
 }

@@ -4,7 +4,7 @@ package pb;
 
 option go_package = "github.com/Hymeis/Distributed-Cache/cache/pb;pb";
 
-message Request {
+message GetRequest {
   string group = 1;
   string key = 2;
 }
@@ -13,6 +13,15 @@ message Response {
   bytes value = 1;
 }
 
+message SetRequest {
+  string group = 1;
+  string key = 2;
+  bytes value = 3;
+}
+
+message EmptyResponse {}
+
 service GroupCache {
-  rpc Get(Request) returns (Response);
+  rpc Get(GetRequest) returns (Response);
+  rpc Set(SetRequest) returns (EmptyResponse);
 }
