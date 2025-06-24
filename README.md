@@ -1,5 +1,5 @@
 # Distributed-Cache
-A lightweight, Go-based distributed in-memory cache with  **consistent-hashing sharding**, **singleflight deduplication**, **size-bounded LRU**, **protobuf communcation**, and **read-Through replication**
+A lightweight, Go-based distributed in-memory cache with  **consistent-hashing sharding**, **singleflight deduplication**, **size-bounded LRU**, **protobuf communication**, and **read-through replication**
 ## Architecture
 
 ```text
